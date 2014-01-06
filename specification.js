@@ -81,12 +81,12 @@
 
 	/**
 	 * Insert will define the way the view is inserted. It defaults to 'replace'. Possible options:
-	 * 'replace'				=>		Replace the full content of its parent.
-	 * 'append'					=>		Append the content to the end of the content of its parent.
-	 * 'prepend'				=>		Prepend the content at the beginning of the content of its parent.
-	 * function					=>		A function that will insert the elements itself.
-	 * '(append/prepend)Once'	=>		Places the content in it's parent, either at the beginning or end but makes
-	 * 									sure this is the only view-app in there. Usefull for inserting a layout.
+	 * 'replace'               =>   Replace the full content of its parent.
+	 * 'append'                =>   Append the content to the end of the content of its parent.
+	 * 'prepend'               =>   Prepend the content at the beginning of the content of its parent.
+	 * function                =>   A function that will insert the elements itself.
+	 * '(append/prepend)Once'  =>   Places the content in it's parent, either at the beginning or end but makes
+	 *                              sure this is the only view-app in there. Usefull for inserting a layout.
 	 */
 	views.popup.bind({
 		insert: 'append',
@@ -96,18 +96,6 @@
 		parent: document.body,
 		insert: 'appendOnce'
 	});
-
-
-	/***********************
-	 * ____INHERITANCE____ */
-
-	/**
-	 * To create a new View from an existing Desperado-view, use the extendTo
-	 * function. This will inherit all settings (and maybe the bound classes and
-	 * event listeners with an extra argument). The string will be the namespace
-	 * for the view.
-	 */
-	views.layout.extendTo('differentLayout').settings({});
 
 
 	/***********************
@@ -134,7 +122,19 @@
 	views.users.list.detach();
 
 
-	/*********************************
+	/***********************
+	 * ____INHERITANCE____ */
+
+	/**
+	 * To create a new View from an existing Desperado-view, use the extendTo
+	 * function. This will inherit all settings (and maybe the bound classes and
+	 * event listeners with an extra argument). The string will be the namespace
+	 * for the view.
+	 */
+	views.layout.extendTo('differentLayout').settings({});
+
+
+	/************************************************
 	 * ____CALLBACKS AND BINDING (EXPERIMENTAL)____ */
 
 	/**
@@ -165,9 +165,11 @@
 	view.users.list.off('after.detach', function() {});
 
 
-
-
-
+	/**
+	 * Data can be set manually on the view. This will cause the view to be re-rendered.
+	 * (TODO: Specify an option to turn this off in case a two-way databinding template is used.)
+	 */
+	views.users.list.set('users', users);
 
 
 
@@ -186,10 +188,18 @@
 		views.users.list.show();
 
 		// Peter will automatically be added to the rendered list after 2.5 seconds.
-		setTimeout(function() {
+		_.delay(function() {
 			users.push('Peter');
 		}, 2500);
 	});
+
+
+
+	/***********************************************************************
+	******* END SPECIFICATION, BELOW ARE JUST THOUGHTS AND SCRAMBLES *******
+	***********************************************************************/
+
+
 
 
 	/******************************
