@@ -88,7 +88,7 @@
 	 * '(append/prepend)Once'  =>   Places the content in it's parent, either at the beginning or end but makes
 	 *                              sure this is the only view-app in there. Usefull for inserting a layout.
 	 */
-	views.popup.bind({
+	views.popup.settings({
 		insert: 'append',
 		parent: 'layout'
 	});
@@ -228,6 +228,11 @@
 
 	/******************************
 	 * ____PROBLEMS AND STUFF____ */
+	// View doesn't say where in the parent view it should render. A possible solution:
+	views.users.index.settings({
+		parent: 'layout:main-content'
+	});
+
 
 	// When a part of a view is already rendered with data and another route url re-uses this.
 	// It is already in the DOM. How do you know if the data is already there or not?
@@ -252,25 +257,24 @@
 
 	// Define how data from a parent view can be accesible to a child view. Do they always leak through, should
 	// this be an option?
-
-	// TODO: How do you define the template of a collection. Like this or in the DOM with a data
-	// attribute. (data-template="views.users.item")
-	views.users.list.bind({
-		data: {
-			users: 'views.users.item',
-			users: {
-				template: views.users.item,
-				data: null
-			},
+	// 
+	// Maybe something like this. It will ask the immediate parent for the data records. If it doesn't exist there, it
+	// could bubble up, asking it's parents parent for that data, etc.
+	views.users.list.settings({
+		parentData: {
+			records: null
+		}
+	});
+	// Or specify a different view.
+	views.users.list.settings({
+		parentData: {
+			records: 'views.records.index'
 		}
 	});
 
-	/**
-	 * When an array(-like) object is passed, it will automatically listen to changes and when the
-	 * array changes the list will be re-rendered.
-	 * NOTE: Define this furder down.
-	 */
-
+	// When an array(-like) object is passed, it will automatically listen to changes and when the
+	// array changes the list will be re-rendered.
+	// NOTE: Define this furder down.
 
 	// Solve the problem where each view must have one single root element. Marionette has this
 	// problem. Maybe each rendered view can have a unique data-id. This same data-id can be set
@@ -282,7 +286,9 @@
 	// queue them up until it's opened again.
 
 	// Maybe it's cool to create a new view from an existing one by instantiating it:
-	// var userItem = new views.users.list();
+	// var userItem = new views.users.list(); This could be a lot faster than extendTo().
+	// Copying all the properties to a new object seems like a performance hit.
+
 
 	/*************************
 	 * ____REMOVED IDEAS____ */
