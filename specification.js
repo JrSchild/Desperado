@@ -1,7 +1,7 @@
 /**
  * The idea of this syntax is a replacement for layoutmanagers like Marionette or Chaplin.
  * It should enable the developer to better seperate View classes from how data is passed 
- * to the view. Two-way databinding should be supported in its own way.
+ * to the view.
  *
  * The templates must be pre-compiled and exist in its own namespace. These templates can be
  * enhanced by the program. They will provide an extra set of utilities and helper functions
@@ -17,81 +17,62 @@
 (function() {
 
 
+	/************************
+	 * ____CONSTRUCTION____ */
+
 	/**
-	 * A template can be compiled to a view(-app) to get enhanced the functionallity.
+	 * Start by creating a namespace for your views.
 	 */
-	view.layout = new Desperado(Templates.layout);
-	// Or compile the complete namespace to a view.
-	window.view = new Desperado(Templates);
-	// By default the render() function on the template will be used to render the template
-	// This can be changed.
-	view.layout = new Desperado(Templates.layout, {render: 'generate'});
-	
-	// Other idea;
-	// But where do we store the specific Chappito-instance settings?
-	// Each view has to know about the view namespace.
+	window.view = new Desperado(options);
+
+	/**
+	 * To enhance a template to a Desperado-view use the Desperado function on the object.
+	 * The second parameter is the namespace for this template. This can also be sepperated
+	 * by points to nest views.
+	 */
+	view.Desperado(Templates.layout, 'layout');
+	view.Desperado(Templates.users.index, 'users.index');
+
+	/**
+	 * To compile a complete set of templates, pass in the namespace as second argument
+	 */
+	window.view = new Desperado(options, Templates);
+
+
+	/*******************
+	 * ____OPTIONS____ */
+
+	/**
+	 * By default the 'render()' function will be used to render the templates. This can also be
+	 * changed.
+	 */
 	window.view = new Desperado({
-		render: 'render'
+		render: 'generate'
 	});
-	view.Desperado.add(Templates.layout);
-	view.Desperado.add(Templates.users.index, 'users.index');
-	view.Desperado.add(Templates.users.list, 'users.list');
-	view.users.list.settings({
-		parent: 'users.index',
-		data: {}
-	})
-	view.users.list.bind(Backbone.View, {
-		constructor: function(class) {}
-	});
+
+
+	/********************
+	 * ____SETTINGS____ */
 
 	/**
-	 * Each template is considered as a view after compiling. 
-	 */
-	views.layout.bind({
-		parent: document.body
-	});
-	views.layout.bind({
-		parent: document.body,
-		insert: 'appendOnce'
-	});
-
-
-	/**
-	 * When inheriting from another view, use the extend function.
-	 */
-	views.differentLayout = views.layout.extend({
-		// Specific options
-	});
-	// (Idea) Alternativly extendTo can be used to do exactly the same.
-	views.layout.extendTo('differentLayout').bind({});
-
-
-	/**
-	 * The users.index template will render up. By defining layout as its parent it
+	 * The users.index template will try to render up. By defining layout as its parent it
 	 * will render this view inside the layout. If the layout is already present in
 	 * the DOM it will replace the content, keeping the state of layout intact.
+	 * Parent can also be an element.
 	 */
-	views.users.index.bind({
+	views.users.index.settings({
 		parent: 'layout'
 	});
-
-
-	/**
-	 * Calling bind with the first parameter as string, will bind the options to just this route.
-	 * This will cause the view to re-render if navigated to a different route.
-	 */
-	views.projects.index.bind('/projects', {
-		// Options
+	views.layout.settings({
+		parent: document.body
 	});
-
 
 	/**
 	 * Use the data property to tell the view on which data it will depend. This way the template
 	 * will render normally and can re-render when any of these properties are changed. When a view
 	 * is closed and rendered again, the data it had will be lost.
 	 */
-	views.users.list.bind({
-		parent: 'users.index',
+	view.users.list.settings({
 		data: {
 			users: null,
 			age: null
@@ -99,38 +80,95 @@
 	});
 
 	/**
-	 * A view can be closed. Data that has been set previously will be lost and the instance removed.
+	 * Insert will define the way the view is inserted. It defaults to 'replace'. Possible options:
+	 * 'replace'				=>		Replace the full content of its parent.
+	 * 'append'					=>		Append the content to the end of the content of its parent.
+	 * 'prepend'				=>		Prepend the content at the beginning of the content of its parent.
+	 * function					=>		A function that will insert the elements itself.
+	 * '(append/prepend)Once'	=>		Places the content in it's parent, either at the beginning or end but makes
+	 * 									sure this is the only view-app in there. Usefull for inserting a layout.
+	 */
+	views.popup.bind({
+		insert: 'append',
+		parent: 'layout'
+	});
+	views.layout.settings({
+		parent: document.body,
+		insert: 'appendOnce'
+	});
+
+
+	/***********************
+	 * ____INHERITANCE____ */
+
+	/**
+	 * To create a new View from an existing Desperado-view, use the extendTo
+	 * function. This will inherit all settings (and maybe the bound classes and
+	 * event listeners with an extra argument). The string will be the namespace
+	 * for the view.
+	 */
+	views.layout.extendTo('differentLayout').settings({});
+
+
+	/***********************
+	 * ____OPENING AND CLOSING____ */
+
+	/**
+	 * To show a view call the method open. This will render the view inside its parent, and that
+	 * parent in its own, etc.
+	 */
+	views.users.list.open();
+
+	/**
+	 * A view can be closed. Data that has been previously set will be lost and the instance removed.
+	 * The elements will be removed from the DOM.
 	 * TODO: Specify options to keep the data after closing.
 	 */
 	views.users.list.close();
 
 	/**
 	 * By detaching a view, the view will be removed from the DOM but the event handlers and data
-	 * will stay intact.
+	 * will stay intact. By running open again, the view will be placed back in the DOM and the
+	 * data restored.
 	 */
 	views.users.list.detach();
-	/**
-	 * By running show, the view will be placed back in the DOM again.
-	 */
-	views.users.list.show();
 
 
+	/*********************************
+	 * ____CALLBACKS AND BINDING (EXPERIMENTAL)____ */
+
 	/**
-	 * In the case where you'd want a view to append or prepend to its parent, set insert to
-	 * 'append'. Default is 'replace'. Alternativly you can use a function to determine where
-	 * to insert the view.
+	 * Classes can be bound to a view. Each time a view is opened (unless detached) this will
+	 * create an instance of the class. The second parameter is a nonmandatory object of options.
+	 * Constructor will be the function that defines how to create the class.
 	 */
-	views.popup.bind({
-		insert: 'append',
-		parent: 'layout'
+	view.users.list.bind(Backbone.View);
+	view.users.list.bind(Backbone.View, {
+		constructor: function(class, data) {
+			// this = view.users.list
+			return new class(data);
+		}
 	});
 
-
 	/**
-	 * When an array(-like) object is passed, it will automatically listen to changes and when the
-	 * array changes the list will be re-rendered.
-	 * NOTE: Define this furder down.
+	 * A list of event listeners is available and can be (un)set with the on and off methods.
 	 */
+	view.users.list.on('before.open', function() {});
+	view.users.list.on('before.close', function() {});
+	view.users.list.on('before.render', function() {});
+	view.users.list.on('before.detach', function() {});
+	view.users.list.on('after.open', function() {});
+	view.users.list.on('after.close', function() {});
+	view.users.list.on('after.render', function() {});
+	view.users.list.on('after.detach', function() {});
+
+	view.users.list.off('after.detach', function() {});
+
+
+
+
+
+
 
 
 	/**
@@ -154,9 +192,8 @@
 	});
 
 
-	/**
-	 * Problems and stuff....
-	 */
+	/******************************
+	 * ____PROBLEMS AND STUFF____ */
 	// When a part of a view is already rendered with data and another route url re-uses this.
 	// It is already in the DOM. How do you know if the data is already there or not?
 	// We would want to avoid re-doing things like: views.sections.login.set('user', user);
@@ -184,6 +221,11 @@
 		}
 	});
 
+	/**
+	 * When an array(-like) object is passed, it will automatically listen to changes and when the
+	 * array changes the list will be re-rendered.
+	 * NOTE: Define this furder down.
+	 */
 
 	// Idea; Binding methods on 'this', will only be bound for this route and will be unbound when moving away.
 	// Note: It then becomes framework dependent.
@@ -253,5 +295,16 @@
 
 	// This view can also be unbound.
 	views.users.list.unbind(UsersListView);
+
+	/*************************
+	 * ____REMOVED IDEAS____ */
+
+	/**
+	 * Calling settings with the first parameter as string, will bind the options to just this route.
+	 * This will cause the view to re-render if navigated to a different route.
+	 */
+	views.projects.index.settings('/projects', {
+		// Options
+	});
 
 })();
