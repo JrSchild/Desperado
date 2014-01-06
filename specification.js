@@ -98,12 +98,12 @@
 	});
 
 
-	/***********************
+	/*******************************
 	 * ____OPENING AND CLOSING____ */
 
 	/**
-	 * To show a view call the method open. This will render the view inside its parent, and that
-	 * parent in its own, etc.
+	 * To show a view, call the method open. This will render the view inside its parent, and that
+	 * parent in its own parent, etc.
 	 */
 	views.users.list.open();
 
@@ -122,6 +122,28 @@
 	views.users.list.detach();
 
 
+	/******************************************
+	 * ____HTML ATTRIBUTES (EXPERIMENTAL)____ */
+
+	/**
+	 * A set of HTML attributes will are required to tell Desperado where to render which view.
+	 * (TODO: Maybe this should also be possible to do through javascript only)
+	 */
+	// The view with name 'main-content' will be rendered inside.
+	'<div data-name="main-content"></div>';
+
+	// Render the email object with the view email.sidebar.
+	// This will use the existing email.sidebar view.
+	'<span data-template="email.sidebar" data-content="email"></span>';
+
+	// Render the users-array with the view users.list.
+	// This will instantiate a new 'users.list' view for each item.
+	'<ul data-template="users.list" data-list="users"></ul>';
+
+	// Immediately render this child view. Seperate multiple children by space.
+	'<div data-child="users.login">';
+
+
 	/***********************
 	 * ____INHERITANCE____ */
 
@@ -138,17 +160,22 @@
 	 * ____CALLBACKS AND BINDING (EXPERIMENTAL)____ */
 
 	/**
-	 * Classes can be bound to a view. Each time a view is opened (unless detached) this will
-	 * create an instance of the class. The second parameter is a nonmandatory object of options.
-	 * Constructor will be the function that defines how to create the class.
+	 * Classes can be bound and unbound to a view. Each time a view is opened (unless detached) the
+	 * class will be instantiated. The second parameter is a nonmandatory object of options.
+	 * Options:
+	 * constructor      => (optional [Object]) will be the function that defines how to create the class.
+	 * name             => (optional [String]) to find the instance of the class back, apply a name.
 	 */
-	view.users.list.bind(Backbone.View);
-	view.users.list.bind(Backbone.View, {
-		constructor: function(class, data) {
-			// this = view.users.list
-			return new class(data);
-		}
+	view.users.list.bind(BackboneView);
+	view.users.list.bind(BackboneView, {
+		constructor: function(viewClass, data) {
+			// this === view.users.list
+			return new viewClass(data);
+		},
+		name: 'backboneView'
 	});
+	views.users.list.unbind(BackboneView);
+
 
 	/**
 	 * A list of event listeners is available and can be (un)set with the on and off methods.
@@ -167,10 +194,10 @@
 
 	/**
 	 * Data can be set manually on the view. This will cause the view to be re-rendered.
-	 * (TODO: Specify an option to turn this off in case a two-way databinding template is used.)
+	 * (TODO: Specify an option to turn this auto-re-render off in case a two-way databinding
+	 * templatee-ngine is used.)
 	 */
 	views.users.list.set('users', users);
-
 
 
 	/**
@@ -194,16 +221,14 @@
 	});
 
 
-
 	/***********************************************************************
 	******* END SPECIFICATION, BELOW ARE JUST THOUGHTS AND SCRAMBLES *******
 	***********************************************************************/
 
 
-
-
 	/******************************
 	 * ____PROBLEMS AND STUFF____ */
+
 	// When a part of a view is already rendered with data and another route url re-uses this.
 	// It is already in the DOM. How do you know if the data is already there or not?
 	// We would want to avoid re-doing things like: views.sections.login.set('user', user);
@@ -218,6 +243,15 @@
 		this.set('user', app.user || {});
 	});
 
+
+	// What happens when multiple instances are required. For instance in a list. How do we keep instances
+	// accessible?
+	// Maybe it should be possible to create a new instance of a view.
+	// views.users.list.extendTo(). Leaving the first parameter empty will only return the new instance. Applying a string
+	// will also add it to the namespace.
+
+	// Define how data from a parent view can be accesible to a child view. Do they always leak through, should
+	// this be an option?
 
 	// TODO: How do you define the template of a collection. Like this or in the DOM with a data
 	// attribute. (data-template="views.users.item")
@@ -237,13 +271,41 @@
 	 * NOTE: Define this furder down.
 	 */
 
-	// Idea; Binding methods on 'this', will only be bound for this route and will be unbound when moving away.
+
+	// Solve the problem where each view must have one single root element. Marionette has this
+	// problem. Maybe each rendered view can have a unique data-id. This same data-id can be set
+	// on the root element(s). The id will be deleted when a view is closed and a new one generated
+	// when the view is opened again.
+
+	// Specify options on how to detach views and what to do with data after a view is closed.
+	// Also, when it's detached, use an option to make it stop listening for events, or maybe
+	// queue them up until it's opened again.
+
+	// Maybe it's cool to create a new view from an existing one by instantiating it:
+	// var userItem = new views.users.list();
+
+	/*************************
+	 * ____REMOVED IDEAS____ */
+
+	/**
+	 * This probably makes the whole thing unnecesary complex.
+	 * Calling settings with the first parameter as string, will bind the options to just this route.
+	 * This will cause the view to re-render if navigated to a different route.
+	 */
+	views.projects.index.settings('/projects', {
+		// Options
+	});
+
+	// Binding methods on 'this', will only be bound for this route and will be unbound when moving away.
 	// Note: It then becomes framework dependent.
 	this.on('views.users.list.render', function() {
 
 	});
 
-
+	// Desperado won't be a new templating language with two way databinding. That exceeds the scope
+	// of this project. Desperado should be powerful but small and maintainable. For now I'll let this
+	// here.
+	// 
 	// In the beginning the script will re-render the whole thing when the data changes. That is just for the
 	// convencience of testing the API. This would be an undesired effect. Data should be made dynamic and
 	// binded in two-ways. A nice thing would be bindAttr(). Where you can execute a function to assign an
@@ -254,67 +316,6 @@
 		users: function(users) {
 			return users.length ? 'data-filled="filled"' : '';
 		}
-	});
-
-
-	// What happens when multiple instances are required. For instance in a list. How do we keep isntances
-	// accessible?
-	// Maybe it should be possible to create a new instance of a view.
-	// views.users.list.extend(). Leaving extend() empty will only return the new instance. Applying a string
-	// will also add it to the namespace.
-
-
-	// Solve the problem where each view must have one single root element. Marionette has this
-	// problem. Maybe each rendered view can have a unique data-id. This same data-id can be set
-	// on the root element(s). The id will be deleted when a view is closed and a new one generated
-	// when the view is opened again.
-
-
-	// Define a pattern on how to load data and where on the client to store this.
-
-
-	// Specify options on how to detach views and what to do with data after a view is closed.
-	// Also, when it's detached, use an option to make it stop listening for events, or maybe
-	// queue them up until it's opened again.
-
-
-	// Other test of binding BackboneViews to the presentation.
-	// Maybe bind can be called multiple times. Attaching different kind of View behavior to a
-	// view.
-	// 
-	// In some form, this can be used as a mixin.
-	// Here the UsersListView will be instantiated every time the users.list view will be opened. (unless detached).
-	// 
-	// Blaaaattt this is not good yet.
-	var UsersListView = Backbone.View.extend({
-		events: {
-			'click a.expand': '_loadMore'
-		},
-		_loadMore: function() {
-			var self = this;
-
-			self.data.user.LoadMoreData().done(function(data) {
-				// this.view refers to views.users.list. This will be set on the object when created.
-				self.view.show({
-					extraData: data
-				});
-			});
-		}
-	}
-	views.users.list.bind(UsersListView);
-
-	// This view can also be unbound.
-	views.users.list.unbind(UsersListView);
-
-	/*************************
-	 * ____REMOVED IDEAS____ */
-
-	/**
-	 * Calling settings with the first parameter as string, will bind the options to just this route.
-	 * This will cause the view to re-render if navigated to a different route.
-	 */
-	views.projects.index.settings('/projects', {
-		// Options
 	});
 
 })();
