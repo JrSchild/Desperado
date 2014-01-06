@@ -1,19 +1,3 @@
-/**
- * The idea of this syntax is a replacement for layoutmanagers like Marionette or Chaplin.
- * It should enable the developer to better seperate View classes from how data is passed 
- * to the view.
- *
- * The templates must be pre-compiled and exist in its own namespace. These templates can be
- * enhanced by the program. They will provide an extra set of utilities and helper functions
- * to define how and where a template is rendered. In a 'controller'-like class you can define
- * when it should be rendered.
- *
- * This way it should be easy to implement the view-rendering on both the server and client while
- * still being dynamic.
- * They're practically 'smart' templates that know on itself where and how to render.
- * 
- */
-
 (function() {
 
 
@@ -45,11 +29,20 @@
 	/**
 	 * By default the 'render()' function will be used to render the templates. This can also be
 	 * changed.
+	 * Default: 'render'
 	 */
 	window.view = new Desperado({
 		render: 'generate'
 	});
 
+	/**
+	 * AutoReRender will let the templates re-render themselves automatically when data changes.
+	 * This will re-instantiate classes that are bound (see below, bind).
+	 * Default: 'true'
+	 */
+	window.view = new Desperado({
+		autoReRender: true
+	});
 
 	/********************
 	 * ____SETTINGS____ */
@@ -59,6 +52,7 @@
 	 * will render this view inside the layout. If the layout is already present in
 	 * the DOM it will replace the content, keeping the state of layout intact.
 	 * Parent can also be an element.
+	 * Default: ''
 	 */
 	views.users.index.settings({
 		parent: 'layout'
@@ -71,6 +65,7 @@
 	 * Use the data property to tell the view on which data it will depend. This way the template
 	 * will render normally and can re-render when any of these properties are changed. When a view
 	 * is closed and rendered again, the data it had will be lost.
+	 * Default: {}
 	 */
 	view.users.list.settings({
 		data: {
@@ -80,13 +75,14 @@
 	});
 
 	/**
-	 * Insert will define the way the view is inserted. It defaults to 'replace'. Possible options:
+	 * Insert will define the way the view is inserted. Possible options:
 	 * 'replace'               =>   Replace the full content of its parent.
 	 * 'append'                =>   Append the content to the end of the content of its parent.
 	 * 'prepend'               =>   Prepend the content at the beginning of the content of its parent.
 	 * function                =>   A function that will insert the elements itself.
 	 * '(append/prepend)Once'  =>   Places the content in it's parent, either at the beginning or end but makes
 	 *                              sure this is the only view-app in there. Usefull for inserting a layout.
+	 * Default: 'replace'
 	 */
 	views.popup.settings({
 		insert: 'append',
@@ -271,6 +267,19 @@
 			records: 'views.records.index'
 		}
 	});
+
+	// Ways to restore the views from the DOM. It should be possible to transfer the rendered state from the
+	// server to the client. Most likely through data attributes.
+	// From the server:
+	'<div data-view="views.users">
+		<ul data-template="users.list" data-list="users">
+			<li data-view="users.list-425532" data-var="{user: {name: "Joram"}}"></li>
+			<li data-view="users.list-987987" data-var="{user: {name: "Peter"}}"></li>
+			<li data-view="users.list-682910" data-var="{user: {name: "Paul"}}"></li>
+		</ul>
+	</div>'
+	// When data-view ends with a number it means it's a generated instance of the view users.list.
+	// After initializing all the views run Desperado.restore(); to restore all the view objects.
 
 	// When an array(-like) object is passed, it will automatically listen to changes and when the
 	// array changes the list will be re-rendered.
