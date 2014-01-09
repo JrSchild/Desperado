@@ -10,7 +10,9 @@ The templates must be pre-compiled and exist in its own namespace. These templat
 This way it should be easy to implement the view-rendering on both the server and client while still keeping everything highly dynamic. They're practically 'smart' templates that know on itself where and how to render. The benefits are:
 * It is fast and small.
 * Code becomes less verbose.
-* Easier to seperate code from logic.
+* Easier to seperate HTML from logic.
 * Works with any templating language.
 * Can be used with any javascript framework.
 * Can be used on both the server and the client.
+* No dependencies except your favorite templating-engine.
+* Automatic buffering, delays DOM insertion until completely rendered.

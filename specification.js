@@ -7,20 +7,20 @@
 	/**
 	 * Start by creating a namespace for your views.
 	 */
-	window.view = new Desperado(options);
+	window.views = new Desperado(options);
 
 	/**
 	 * To enhance a template to a Desperado-view use the Desperado function on the object.
 	 * The second parameter is the namespace for this template. This can also be sepperated
 	 * by points to nest views.
 	 */
-	view.Desperado(Templates.layout, 'layout');
-	view.Desperado(Templates.users.index, 'users.index');
+	views.Desperado(Templates.layout, 'layout');
+	views.Desperado(Templates.users.index, 'users.index');
 
 	/**
 	 * To compile a complete set of templates, pass in the namespace as second argument
 	 */
-	window.view = new Desperado(options, Templates);
+	window.views = new Desperado(options, Templates);
 
 
 	/*******************
@@ -31,7 +31,7 @@
 	 * changed.
 	 * Default: 'render'
 	 */
-	window.view = new Desperado({
+	window.views = new Desperado({
 		render: 'generate'
 	});
 
@@ -40,7 +40,7 @@
 	 * This will re-instantiate classes that are bound (see below, bind).
 	 * Default: 'true'
 	 */
-	window.view = new Desperado({
+	window.views = new Desperado({
 		autoReRender: true
 	});
 
@@ -67,7 +67,7 @@
 	 * is closed and rendered again, the data it had will be lost.
 	 * Default: {}
 	 */
-	view.users.list.settings({
+	views.users.list.settings({
 		data: {
 			users: null,
 			age: null
@@ -75,13 +75,13 @@
 	});
 
 	/**
-	 * Insert will define the way the view is inserted. Possible options:
+	 * Insert will define how the content of the view is inserted. Possible options:
 	 * 'replace'               =>   Replace the full content of its parent.
-	 * 'append'                =>   Append the content to the end of the content of its parent.
-	 * 'prepend'               =>   Prepend the content at the beginning of the content of its parent.
+	 * 'append'                =>   Append to the end of the content of its parent.
+	 * 'prepend'               =>   Prepend at the beginning of the content of its parent.
 	 * function                =>   A function that will insert the elements itself.
-	 * '(append/prepend)Once'  =>   Places the content in it's parent, either at the beginning or end but makes
-	 *                              sure this is the only view-app in there. Usefull for inserting a layout.
+	 * '(append/prepend)Once'  =>   Either appends or prepends, but makes sure this is the only
+	 *                              view-app, so it has no siblings. Useful for inserting a layout.
 	 * Default: 'replace'
 	 */
 	views.popup.settings({
@@ -122,8 +122,8 @@
 	 * ____HTML ATTRIBUTES (EXPERIMENTAL)____ */
 
 	/**
-	 * A set of HTML attributes will are required to tell Desperado where to render which view.
-	 * (TODO: Maybe this should also be possible to do through javascript only)
+	 * A set of HTML attributes are required to tell Desperado where to render which view.
+	 * (TODO: Maybe this should only be possible to do through javascript)
 	 */
 	// The view with name 'main-content' will be rendered inside.
 	'<div data-name="main-content"></div>';
@@ -136,8 +136,8 @@
 	// This will instantiate a new 'users.list' view for each item.
 	'<ul data-template="users.list" data-list="users"></ul>';
 
-	// Immediately render this child view. Seperate multiple children by space.
-	'<div data-child="users.login">';
+	// Render the users.login view as child. Seperate multiple children by space.
+	'<div data-child="users.login"></div>';
 
 
 	/***********************
@@ -159,15 +159,18 @@
 	 * Classes can be bound and unbound to a view. Each time a view is opened (unless detached) the
 	 * class will be instantiated. The second parameter is a nonmandatory object of options.
 	 * Options:
-	 * constructor      => (optional [Object]) will be the function that defines how to create the class.
+	 * constructor      => (optional [Func]) will be the function that defines how to create the class.
+	 * destructor       => (optional [Func, String]) function to execute when view is closed and instance destroyed.
+	 *                     Could be a string-name of the destructor function of the class.
 	 * name             => (optional [String]) to find the instance of the class back, apply a name.
 	 */
-	view.users.list.bind(BackboneView);
-	view.users.list.bind(BackboneView, {
-		constructor: function(viewClass, data) {
-			// this === view.users.list
-			return new viewClass(data);
+	views.users.list.bind(function() {});
+	views.users.list.bind(BackboneView);
+	views.users.list.bind(BackboneView, {
+		constructor: function(viewClass) {
+			return new viewClass(this.data);
 		},
+		destructor: 'destroy',
 		name: 'backboneView'
 	});
 	views.users.list.unbind(BackboneView);
@@ -176,24 +179,25 @@
 	/**
 	 * A list of event listeners is available and can be (un)set with the on and off methods.
 	 */
-	view.users.list.on('before.open', function() {});
-	view.users.list.on('before.close', function() {});
-	view.users.list.on('before.render', function() {});
-	view.users.list.on('before.detach', function() {});
-	view.users.list.on('after.open', function() {});
-	view.users.list.on('after.close', function() {});
-	view.users.list.on('after.render', function() {});
-	view.users.list.on('after.detach', function() {});
+	views.users.list.on('before.open', function() {});
+	views.users.list.on('before.close', function() {});
+	views.users.list.on('before.render', function() {});
+	views.users.list.on('before.detach', function() {});
+	views.users.list.on('after.open', function() {});
+	views.users.list.on('after.close', function() {});
+	views.users.list.on('after.render', function() {});
+	views.users.list.on('after.detach', function() {});
 
-	view.users.list.off('after.detach', function() {});
+	views.users.list.off('after.detach', function() {});
 
 
 	/**
-	 * Data can be set manually on the view. This will cause the view to be re-rendered.
-	 * (TODO: Specify an option to turn this auto-re-render off in case a two-way databinding
-	 * templatee-ngine is used.)
+	 * Data can be set manually on the view. This will cause the view to be re-rendered
+	 * unless autoReRender is set to false. The arguments can be a name and value or simply
+	 * one object with all key - value pairs.
 	 */
 	views.users.list.set('users', users);
+	views.users.list.set({users: users});
 
 
 	/**
@@ -267,6 +271,8 @@
 			records: 'views.records.index'
 		}
 	});
+	// When parentData is set the view will automatically listen for changes on views.records.index and will re-set
+	// that data if it changes.
 
 	// Ways to restore the views from the DOM. It should be possible to transfer the rendered state from the
 	// server to the client. Most likely through data attributes.
@@ -279,7 +285,7 @@
 		</ul>
 	</div>'
 	// When data-view ends with a number it means it's a generated instance of the view users.list.
-	// After initializing all the views run Desperado.restore(); to restore all the view objects.
+	// After initializing all the views run views.Desperado.restore(); to restore all the view objects.
 
 	// When an array(-like) object is passed, it will automatically listen to changes and when the
 	// array changes the list will be re-rendered.
@@ -289,6 +295,12 @@
 	// problem. Maybe each rendered view can have a unique data-id. This same data-id can be set
 	// on the root element(s). The id will be deleted when a view is closed and a new one generated
 	// when the view is opened again.
+	// One idea to make this work: when the template is rendered, get all root elements and place
+	// them in a NodeList. This NodeList will be used as 'root-element', when the view is closed
+	// or detached. When inserting new root-elements in this view, they must be inserted in the
+	// NodeList as well as the DOM. One problem this exposes is that frameworks don't have a single
+	// root element anymore. Backbone for instance, will require one root element in a Backbone-View
+	// to e.g. bind events. This is not the responsibility of Desperado to fix.
 
 	// Specify options on how to detach views and what to do with data after a view is closed.
 	// Also, when it's detached, use an option to make it stop listening for events, or maybe
@@ -297,6 +309,9 @@
 	// Maybe it's cool to create a new view from an existing one by instantiating it:
 	// var userItem = new views.users.list(); This could be a lot faster than extendTo().
 	// Copying all the properties to a new object seems like a performance hit.
+	
+	// Design an API to tell what to do with a list view. Maybe you'd want to update a list
+	// of Desperado-views manually. It should probably have the functions: add, delete, refresh.
 
 
 	/*************************
@@ -331,6 +346,185 @@
 		users: function(users) {
 			return users.length ? 'data-filled="filled"' : '';
 		}
+	});
+
+
+	/*************************************
+	 * ____DESPERADO.JS IPHONE NOTES____ */
+
+	// - Make sure buffering is optimized
+	// - Option to put everything in data attributes on the elements, for restoring the app from server to client
+	// - Specify function to render template
+	// API for rendering template differently. Provide own function
+
+	// Way to work with Backbone:
+	View.user.on('before:set', function(data) {
+		if (data instanceof Backbone.Model) {
+			data.on('change', this.reRender);
+		}
+	});
+	View.Desperado.on('before:render', function() {});
+	
+	// Create a function to re-render the view (and its children) without having to re-instantiate late bound classes.
+
+	View.user.close({
+	    data: false,
+	    classes: false,
+	    children: true,
+	    elements: false,
+	    listeners: false // ??
+	});
+	// Data: The data that was set on the view.
+	// Classes: All instantiated classes that have been bound to the view.
+	// Children: The childviews that have been attached to the view.
+	// Elements: The elements that have been rendered.
+	//           Keeping them might become complicated. What happens when the data changes.
+	//           Will the views be re-renderd even though they're not visible?
+	// Listeners: What listeners...?
+
+	// When data has been set on the view.
+	views.users.list.on('before.set', function(data) {});
+	views.users.list.on('after.set', function(data) {});
+
+	// Some way to cancel events?
+	// {
+	//     event: false
+	// }
+
+	// Transitions; before:close. Delay closing? By returning a promise
+
+	// this.data = data currently set.
+	// this.settings.data = default data send to templates, unless overwritten in this.data.
+	
+	views.users.list.bind(BackboneView, {
+		constructor: function(viewClass, data) {},
+		destructor: function(viewClass) {},
+		pause: function(viewClass) {},
+		resume: function(viewClass) {},
+		name: 'backboneView'
+	});
+
+	views.layout.extendTo(null, {
+		settings: {
+			data: false,
+			parentData: false,
+			parent: false
+		},
+		data: true // Data currently set on the layout... ?
+	});
+	// This whole thing is very confusing. If the last thing is not possible, the user must manually
+	// set the data themself on the new view. Also the content of settings could be the main parameter.
+	var newView = views.layout
+		.extendTo({
+			data: false,
+			parent: false
+		})
+		.set(views.layout.data);
+
+	// Global events on the view namespace.
+	views.Desperado.on('view:created', function(view) {}); // Fires after a views has been created and the bound classes instantiated.
+
+	var index = views.users.index;
+	/**
+	 * Children will be defined as following.
+	 * An object with in the key the name of the container and value either as
+	 * selector or as an object with the following settings:
+	 *      selector: Selector of container.
+	 *      view:     Name of view to render inside. If this option is set, the view will
+	 *                be automatically rendered inside. The insert method of the child view will be
+	 *                ignored.
+	 *      data:     Data passed to the view from the parent, in string, sepperated by spaces,
+	 *                if empty, the whole object will be used.
+	 *      insert:   Insert method to be used. If it's set, the insert method of the child will be ignored. 
+	 *                Values can be:
+	 *                    1) One of the already specified methods: append, prepend, replace, (append|prepend)Once.
+	 *                    2) A function. Function must define how the view is placed in the DOM, but also keep
+	 *                       it in the same order in the view array as in the DOM.
+	 *                    3) a custom method. (as string) defined on this view (not the child view)
+	 */
+	index.settings.children = {
+		mainContent: '.main-content',
+		sidebar: '.sidebar',
+		users: {
+			selector: '#list-users',
+			view: 'users.listItem',
+			data: 'users records',
+			// insert: function() {},
+			// insert: 'append',
+			insert: 'customInsert'
+		}
+	};
+	// TODO: HOW TO DEFINE LISTS...?
+
+	/**
+	 * The actual data of the children will be stored straight on the view itself.
+	 * It's not intended to interact with this data straight away, but through
+	 * accessors.
+	 * It will contain the following data:
+	 * 		element: A cached node element of the container.
+	 * 		views:   The views in an array currently rendered in this container.
+	 * 		queue:   A queue as array of views, that want to be rendered inside this container.
+	 * 		         When rendering, the latest view can decide to 'kick' out the other views.
+	 * 		methods: accessor and other convenience methods.
+	 * 		
+	 */
+	index.children.mainContent = {
+		element: nodeElement,
+		views: [
+			view1,
+			view2
+		],
+		queue: [],
+		get: function(name) {},
+		queuePush: function(view) {},
+		queuePop: function() {},
+		pushChild: function(view) {} // lol taht name.
+	}
+	index.children('mainContent').get(views.user.profile);
+	// Get nearest view in views array wrapped around this element.
+	index.children('mainContent').get(nodeElment);
+	index.children('mainContent').pushChild(view);
+
+
+	// Code examples
+	// 		How to mix it into existing backbone/angular/ember-applications.
+	// 		After Angular has rendered
+	// 		epoxyjs (how me gonna solve that, delegate view rendering to a different class)
+
+	// Other Desperado plugin classes:
+	// Backbone listeners for auto-update.
+	// Transitions
+	// Asynchronous loading templates
+	// 		Set root url
+
+
+	/******************************
+	 * ____LAYOUT MANAGER API____ */
+	var detailed = new Backbone.LayoutManager({
+		template: '#detailed-tmpl',
+		name: "detailed",
+		views: {
+			'': [
+				new HeaderView(),
+				new ContentView(),
+				new FooterView()
+			]
+			'.list': new TweetsView({tweets: tweetModel})
+		}
+	});
+	detailed.setView('.list', new TweetsView())
+
+	serialize = function() {
+		return {tweets: this.data.tweets};
+	}
+	serialize = {myData: ['all', 'my', 'data']}
+	render = function() {
+		return this.template.render(this.serialize());
+	}
+	// ugly IMO. Rather than listening to the model straight away it re-sets it and calls render again manually.
+	list.bind('update', function(model) {
+		deatil.model = model;
+		detail.render();
 	});
 
 })();
