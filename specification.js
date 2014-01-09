@@ -124,6 +124,7 @@
 	/**
 	 * A set of HTML attributes are required to tell Desperado where to render which view.
 	 * (TODO: Maybe this should only be possible to do through javascript)
+	 * Update: See for Javascript API at defining children below.
 	 */
 	// The view with name 'main-content' will be rendered inside.
 	'<div data-name="main-content"></div>';
@@ -223,16 +224,95 @@
 
 	/***********************************************************************
 	******* END SPECIFICATION, BELOW ARE JUST THOUGHTS AND SCRAMBLES *******
+	********** SOME OF THIS STUFF WILL BE MOVED TO THE SPEC ABOVE **********
 	***********************************************************************/
+
+	/*****************************
+	 * ____DEFINING CHILDREN____ */
+
+	var index = views.users.index;
+	/**
+	 * Settings of children should be defined through setters. Children will be defined as following.
+	 * An object with in the key the name of the container and value either as
+	 * selector or as an object with the following settings:
+	 *      selector: Selector of container.
+	 *      view:     Name of view to render inside. If this option is set, the view will
+	 *                be automatically rendered inside.
+	 *      data:     Data passed to the view from the parent, in string, sepperated by spaces,
+	 *                if empty, the whole object will be used.
+	 *      insert:   Insert method to be used. If it's set, the insert method of the child will be ignored. 
+	 *                Values can be:
+	 *                    1) One of the already specified methods: append, prepend, replace, (append|prepend)Once.
+	 *                    2) A function. Function must define how the view is placed in the DOM, but also keep
+	 *                       it in the same order in the view array as in the DOM.
+	 *                    3) A custom method. (as string) defined on this view (not the child view)
+	 *      list:     When list property provided, a list of the views will be created with the specified
+	 *                variable. Each view will be copied. Data property will still work. Seperate value by ':'
+	 *                followed by the name of target variable-name.
+	 */
+	index.settings('children', {
+		mainContent: '.main-content',
+		sidebar: '.sidebar',
+		users: {
+			selector: '#list-users',
+			view: 'users.listItem',
+			data: 'users records',
+			list: 'users.models:user',
+			insert: 'customInsert'
+		}
+	});
+	index.settings({
+		children {}
+	});
+
+	// Possible function for list.
+	function list(each) {
+		this.data.users.each(function(i, value) {
+			each('user', value);
+		});
+	};
+
+	// Both return the children-settings.
+	index.settings('children');
+	index.settings.children;
+
+
+	/**
+	 * The actual data of the children will be stored straight on the view itself.
+	 * It's not intended to interact with this data straight away, but through
+	 * accessors.
+	 * It will contain the following data:
+	 * 		element: A cached node element of the container.
+	 * 		views:   The views in an array currently rendered in this container.
+	 * 		queue:   A queue as array of views, that want to be rendered inside this container.
+	 * 		         When rendering, the latest view can decide to 'kick' out the other views.
+	 * 		methods: accessor and other convenience methods.
+	 */
+	index.children.mainContent = {
+		element: nodeElement,
+		views: [
+			view1,
+			view2
+		],
+		queue: [],
+		get: function(name) {},
+		queuePush: function(view) {},
+		queuePop: function() {},
+		pushChild: function(view) {} // lol taht name.
+	};
+	index.children('mainContent').get(views.user.profile);
+	// Get nearest view in views array wrapped around this element.
+	index.children('mainContent').get(nodeElment);
+	index.children('mainContent').pushChild(view);
 
 
 	/******************************
 	 * ____PROBLEMS AND STUFF____ */
+
 	// View doesn't say where in the parent view it should render. A possible solution:
 	views.users.index.settings({
 		parent: 'layout:main-content'
 	});
-
 
 	// When a part of a view is already rendered with data and another route url re-uses this.
 	// It is already in the DOM. How do you know if the data is already there or not?
@@ -358,21 +438,21 @@
 	// API for rendering template differently. Provide own function
 
 	// Way to work with Backbone:
-	View.user.on('before:set', function(data) {
+	view.user.on('before:set', function(data) {
 		if (data instanceof Backbone.Model) {
 			data.on('change', this.reRender);
 		}
 	});
-	View.Desperado.on('before:render', function() {});
+	view.Desperado.on('before:render', function() {});
 	
 	// Create a function to re-render the view (and its children) without having to re-instantiate late bound classes.
 
-	View.user.close({
-	    data: false,
-	    classes: false,
-	    children: true,
-	    elements: false,
-	    listeners: false // ??
+	view.user.close({
+		data: false,
+		classes: false,
+		children: true,
+		elements: false,
+		listeners: false // ??
 	});
 	// Data: The data that was set on the view.
 	// Classes: All instantiated classes that have been bound to the view.
@@ -424,78 +504,17 @@
 	// Global events on the view namespace.
 	views.Desperado.on('view:created', function(view) {}); // Fires after a views has been created and the bound classes instantiated.
 
-	var index = views.users.index;
-	/**
-	 * Children will be defined as following.
-	 * An object with in the key the name of the container and value either as
-	 * selector or as an object with the following settings:
-	 *      selector: Selector of container.
-	 *      view:     Name of view to render inside. If this option is set, the view will
-	 *                be automatically rendered inside. The insert method of the child view will be
-	 *                ignored.
-	 *      data:     Data passed to the view from the parent, in string, sepperated by spaces,
-	 *                if empty, the whole object will be used.
-	 *      insert:   Insert method to be used. If it's set, the insert method of the child will be ignored. 
-	 *                Values can be:
-	 *                    1) One of the already specified methods: append, prepend, replace, (append|prepend)Once.
-	 *                    2) A function. Function must define how the view is placed in the DOM, but also keep
-	 *                       it in the same order in the view array as in the DOM.
-	 *                    3) a custom method. (as string) defined on this view (not the child view)
-	 */
-	index.settings.children = {
-		mainContent: '.main-content',
-		sidebar: '.sidebar',
-		users: {
-			selector: '#list-users',
-			view: 'users.listItem',
-			data: 'users records',
-			// insert: function() {},
-			// insert: 'append',
-			insert: 'customInsert'
-		}
-	};
-	// TODO: HOW TO DEFINE LISTS...?
-
-	/**
-	 * The actual data of the children will be stored straight on the view itself.
-	 * It's not intended to interact with this data straight away, but through
-	 * accessors.
-	 * It will contain the following data:
-	 * 		element: A cached node element of the container.
-	 * 		views:   The views in an array currently rendered in this container.
-	 * 		queue:   A queue as array of views, that want to be rendered inside this container.
-	 * 		         When rendering, the latest view can decide to 'kick' out the other views.
-	 * 		methods: accessor and other convenience methods.
-	 * 		
-	 */
-	index.children.mainContent = {
-		element: nodeElement,
-		views: [
-			view1,
-			view2
-		],
-		queue: [],
-		get: function(name) {},
-		queuePush: function(view) {},
-		queuePop: function() {},
-		pushChild: function(view) {} // lol taht name.
-	}
-	index.children('mainContent').get(views.user.profile);
-	// Get nearest view in views array wrapped around this element.
-	index.children('mainContent').get(nodeElment);
-	index.children('mainContent').pushChild(view);
-
 
 	// Code examples
-	// 		How to mix it into existing backbone/angular/ember-applications.
-	// 		After Angular has rendered
-	// 		epoxyjs (how me gonna solve that, delegate view rendering to a different class)
+	//      How to mix it into existing backbone/angular/ember-applications.
+	//      After Angular has rendered
+	//      epoxyjs (how me gonna solve that, delegate view rendering to a different class)
 
 	// Other Desperado plugin classes:
 	// Backbone listeners for auto-update.
 	// Transitions
 	// Asynchronous loading templates
-	// 		Set root url
+	//      Set root url
 
 
 	/******************************
