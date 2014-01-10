@@ -239,14 +239,16 @@
 	 *      view:     Name of view to render inside. If this option is set, the view will
 	 *                be automatically rendered inside.
 	 *      data:     Data passed to the view from the parent, in string, sepperated by spaces,
-	 *                if empty, the whole object will be used.
+	 *                if empty, the whole object will be passed.
 	 *      insert:   Insert method to be used. If it's set, the insert method of the child will be ignored. 
 	 *                Values can be:
 	 *                    1) One of the already specified methods: append, prepend, replace, (append|prepend)Once.
 	 *                    2) A function. Function must define how the view is placed in the DOM, but also keep
 	 *                       it in the same order in the view array as in the DOM.
 	 *                    3) A custom method. (as string) defined on this view (not the child view)
-	 *      list:     When list property provided, a list of the views will be created with the specified
+	 *                       IDEA: Place all insert methods on a namespace, e.g: views.Desperado.insertMethods[methodName].
+	 *                             This way the views will stay 'dumb' and contain as less logic as possible.
+	 *      list:     (Requires view to be set.) When list property provided, a list of the views will be created with the specified
 	 *                variable. Each view will be copied. Data property will still work. Seperate value by ':'
 	 *                followed by the name of target variable-name.
 	 */
@@ -265,8 +267,8 @@
 		children {}
 	});
 
-	// Possible function for list.
-	function list(each) {
+	// Custom insert method.
+	index.customInsert(each) {
 		this.data.users.each(function(i, value) {
 			each('user', value);
 		});
@@ -295,6 +297,7 @@
 			view2
 		],
 		queue: [],
+		parent: index,
 		get: function(name) {},
 		queuePush: function(view) {},
 		queuePop: function() {},
@@ -444,6 +447,11 @@
 		}
 	});
 	view.Desperado.on('before:render', function() {});
+
+	// Other accessor methods.
+	// Problem: you won't get parent back. Unless childview contains property to parent view.
+	view.Desperado.getChildViewContainer('layout:main-content');
+	view.Desperado.getView('users.index').children('main-content');
 	
 	// Create a function to re-render the view (and its children) without having to re-instantiate late bound classes.
 
@@ -527,7 +535,7 @@
 				new HeaderView(),
 				new ContentView(),
 				new FooterView()
-			]
+			],
 			'.list': new TweetsView({tweets: tweetModel})
 		}
 	});
