@@ -268,6 +268,7 @@
 	});
 
 	// Custom insert method.
+	// Note: This isn't good.
 	index.customInsert(each) {
 		this.data.users.each(function(i, value) {
 			each('user', value);
@@ -288,7 +289,8 @@
 	 * 		views:   The views in an array currently rendered in this container.
 	 * 		queue:   A queue as array of views, that want to be rendered inside this container.
 	 * 		         When rendering, the latest view can decide to 'kick' out the other views.
-	 * 		methods: accessor and other convenience methods.
+	 * 		methods: Accessor and other convenience methods.
+	 * 		         Most of the time these functions will only be used internally.
 	 */
 	index.children.mainContent = {
 		element: nodeElement,
@@ -328,7 +330,7 @@
 	// Or do something like this:
 	// Idea to make data dependent upon render
 	views.sections.login.on('before.render', function() {
-		this.set('user', app.user || {});
+		this.set('user', app.user || null);
 	});
 
 
@@ -361,13 +363,13 @@
 	// server to the client. Most likely through data attributes.
 	// From the server:
 	'<div data-view="views.users">
-		<ul data-template="users.list" data-list="users">
-			<li data-view="users.list-425532" data-var="{user: {name: "Joram"}}"></li>
-			<li data-view="users.list-987987" data-var="{user: {name: "Peter"}}"></li>
-			<li data-view="users.list-682910" data-var="{user: {name: "Paul"}}"></li>
+		<ul>
+			<li data-view="users.listItem" data-view-id="425532" data-view-data="{user: {name: "Joram"}}"></li>
+			<li data-view="users.listItem" data-view-id="987987" data-view-data="{user: {name: "Peter"}}"></li>
+			<li data-view="users.listItem" data-view-id="682910" data-view-data="{user: {name: "Paul"}}"></li>
 		</ul>
 	</div>'
-	// When data-view ends with a number it means it's a generated instance of the view users.list.
+	// When data-view-id is specified it means it's a generated instance of the view users.list.
 	// After initializing all the views run views.Desperado.restore(); to restore all the view objects.
 
 	// When an array(-like) object is passed, it will automatically listen to changes and when the
@@ -379,9 +381,9 @@
 	// on the root element(s). The id will be deleted when a view is closed and a new one generated
 	// when the view is opened again.
 	// One idea to make this work: when the template is rendered, get all root elements and place
-	// them in a NodeList. This NodeList will be used as 'root-element', when the view is closed
+	// them in a NodeList. This NodeList will be used as 'root-element' when the view is closed
 	// or detached. When inserting new root-elements in this view, they must be inserted in the
-	// NodeList as well as the DOM. One problem this exposes is that frameworks don't have a single
+	// NodeList as well as in the DOM. One problem this exposes is that frameworks don't have a single
 	// root element anymore. Backbone for instance, will require one root element in a Backbone-View
 	// to e.g. bind events. This is not the responsibility of Desperado to fix.
 
@@ -453,8 +455,21 @@
 	view.Desperado.getChildViewContainer('layout:main-content');
 	view.Desperado.getView('users.index').children('main-content');
 	
+	// Other idea that will cause problems.
+	view.Desperado.get('users.index');
+	view.Desperado.get('users.index:main-content');
+	// If 
+
+
 	// Create a function to re-render the view (and its children) without having to re-instantiate late bound classes.
 
+	// Data: The data that was set on the view.
+	// Classes: All instantiated classes that have been bound to the view.
+	// Children: The childviews that have been attached to the view.
+	// Elements: The elements that have been rendered.
+	//           Keeping them might become complicated. What happens when the data changes.
+	//           Will the views be re-renderd even though they're not in the DOM?
+	// Listeners: What listeners...?
 	view.user.close({
 		data: false,
 		classes: false,
@@ -462,13 +477,6 @@
 		elements: false,
 		listeners: false // ??
 	});
-	// Data: The data that was set on the view.
-	// Classes: All instantiated classes that have been bound to the view.
-	// Children: The childviews that have been attached to the view.
-	// Elements: The elements that have been rendered.
-	//           Keeping them might become complicated. What happens when the data changes.
-	//           Will the views be re-renderd even though they're not visible?
-	// Listeners: What listeners...?
 
 	// When data has been set on the view.
 	views.users.list.on('before.set', function(data) {});
@@ -485,32 +493,91 @@
 	// this.settings.data = default data send to templates, unless overwritten in this.data.
 	
 	views.users.list.bind(BackboneView, {
+		name: 'backboneView'
 		constructor: function(viewClass, data) {},
 		destructor: function(viewClass) {},
 		pause: function(viewClass) {},
 		resume: function(viewClass) {},
-		name: 'backboneView'
 	});
 
-	views.layout.extendTo(null, {
-		settings: {
-			data: false,
-			parentData: false,
-			parent: false
-		},
-		data: true // Data currently set on the layout... ?
+	// Pass in the new settings object in extendTo. If the first property is set, it will
+	// overwrite that value. The last parameter contains properties set on the view directly
+	// that should be copied over. Could be:
+	//     * data: currently set on the view
+	//     * classes: that are bound
+	//     * events: eventhandlers set
+	// This will return the new instance.
+	views.layout.extendTo({
+		data: null,
+		parentData: null,
+		parent: null
+	}, ['classes', 'data']);
+	// Alternativily the first paramater can be a string with a namespace-name to set the
+	// the new view on the views object.
+	views.layout.extendTo('newLayout', {
+		parent: null
 	});
-	// This whole thing is very confusing. If the last thing is not possible, the user must manually
-	// set the data themself on the new view. Also the content of settings could be the main parameter.
-	var newView = views.layout
-		.extendTo({
-			data: false,
-			parent: false
-		})
-		.set(views.layout.data);
+
 
 	// Global events on the view namespace.
-	views.Desperado.on('view:created', function(view) {}); // Fires after a views has been created and the bound classes instantiated.
+	// Fires after a view has been created and the bound classes instantiated.
+	views.Desperado.once('view:created', function(view) {});
+	views.Desperado.on('view:show', function(view) {});
+	views.Desperado.on('view:destroy', function(view) {});
+	views.trigger('show:users.index');
+
+
+	// Better would be to make namespaces an object not a function with data.
+	// 
+	// Rather than:
+	views.Desperado(Templates.index);
+	// Do:
+	views.Desperado.add(Templates.index);
+
+	// Getting and setting settigns:
+	views.index.settings(); // returns views.index.settings.settigns
+	views.index.settings('children'); // returns views.index.settings.settings.children
+	views.index.settings.set('children', {}); // Only overwrite current children settings.
+	views.index.settings.set('children.users', {}); // Only overwrite current children.users settings.
+	views.index.settings({children: {}}); // Throws away current settings and just sets children.
+
+	// Setting and getting data set on the view works just like that:
+	views.index.data(); // Return current data set.
+
+	// The correct place to store the views namespace is:
+	views.index.namespace = views;
+	// Instead of
+	views.index.views = views;
+
+function f(namespace) {
+	var ff = function(name, data) {
+		if (name === undefined) {
+			return ff[namespace];
+		}
+		if (typeof name === 'string') {
+			if (data === undefined) {
+				return ff[namespace][name];
+			} else {
+				ff[namespace][name] = data;
+				return this;
+			}
+		}
+		if (typeof name === 'object') {
+			ff[namespace] = name;
+		}
+	};
+	ff[namespace] = {};
+	return ff;
+}
+
+window.settings = new f('data');
+settings('name', 'henk').settings('age', 15);
+settings('name');
+settings({city: 'Amsterdam'});
+settings();
+
+	// TOOODOOOOOO:
+	// Create View on basis from element. How the hell iz we gonna use an element as parent...?
 
 
 	// Code examples
@@ -518,7 +585,7 @@
 	//      After Angular has rendered
 	//      epoxyjs (how me gonna solve that, delegate view rendering to a different class)
 
-	// Other Desperado plugin classes:
+	// Other Desperado plugin classes, that can simply be bound to a view.
 	// Backbone listeners for auto-update.
 	// Transitions
 	// Asynchronous loading templates
@@ -544,7 +611,6 @@
 	serialize = function() {
 		return {tweets: this.data.tweets};
 	}
-	serialize = {myData: ['all', 'my', 'data']}
 	render = function() {
 		return this.template.render(this.serialize());
 	}

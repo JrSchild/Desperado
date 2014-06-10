@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Desperado Example 1</title>
+	</head>
+	<body>
+		<script src="../vendor/lodash.js"></script>
+		<script src="../desperado.js"></script>
+		<script>
+var views = new Desperado();
+var columns = _.template('<div><div class="profile"></div><div class="login"></div></div>');
+var user = _.template('<div><%= user %></div>');
+var jantje = _.template('<div>Jantje</div>');
+var koentje = _.template('<div>Koentje</div>');
+
+views.Desperado(columns, 'columns')
+	.settings({
+		parent: document.body,
+		insert: 'replace',
+		children: {
+			profile: '.profile',
+			login: '.login'
+		}
+	});
+
+views.Desperado(user, 'user')
+	.settings({
+		insert: 'replace',
+		parent: 'columns:login',
+		data: { user: 'Pieter' }
+	});
+
+views.Desperado(user, 'tmpl3')
+	.settings({
+		insert: 'replace',
+		parent: 'columns:profile',
+		data: { user: 'Henk' }
+	});
+
+views.Desperado(jantje, 'jantje')
+	.settings({
+		insert: 'prepend',
+		parent: 'columns:login',
+		data: {}
+	});
+
+views.Desperado(koentje, 'koentje')
+	.settings({
+		insert: 'prepend',
+		parent: 'columns:login',
+		data: {}
+	});
+
+views.user.open();
+
+		</script>
+	</body>
+</html>
